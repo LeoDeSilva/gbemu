@@ -2,21 +2,9 @@
 
 * [x] initialise z80 architecture struct
 * [x] load ROMS into defined memory address
-* [ ] implement z80->inc() function handling register setting
+* [x] implement z80->inc() function handling register setting
 
-AF (accumulator + flags)
-BC
-DE
-HL
-SP
-PC
-
-## Flags Register (F)
-* Zero (set when the result of the previous operation was 0)
-* Subtraction (set when the previous operation was a subtraction - else unset)
-* Half Carry ()
-* Carry
-
+```
 * 0000-3FFF   16KB ROM Bank 00     (in cartridge, fixed at bank 00)
 * 4000-7FFF   16KB ROM Bank 01..NN (in cartridge, switchable bank number)
 * 8000-9FFF   8KB Video RAM (VRAM) (switchable bank 0-1 in CGB Mode)
@@ -29,6 +17,7 @@ PC
 * FF00-FF7F   I/O Ports
 * FF80-FFFE   High RAM (HRAM)
 * FFFF        Interrupt Enable Register
+```
 
 Split instructions into smaller steps each of which take 4 clock cycles to execute
 ```
@@ -45,6 +34,7 @@ Split instructions into smaller steps each of which take 4 clock cycles to execu
 
 * [ ] Interrupts
 
+## Info Dump
 Let’s take a look at an example. If the timer needs to trigger an interrupt, it has to set IF’s bit 2 to one. As part of the CPU’s execution loop, there’s a step to check if there’s an interrupt pending. But in order for the CPU to handle it, IME must be true and IE’s bit 2 must be turned on as well. If all the conditions are true then the following will happen:
 
 IME will be set to false and the corresponding IF bit will be set to zero.
