@@ -27,15 +27,19 @@ struct Z80 {
 struct Z80 *init_z80_chip(void);
 
 uint8_t fetch_byte(struct Z80 *z80);
+uint16_t fetch_word(struct Z80 *z80); // little endian (reverse byte)
 uint8_t address_byte(struct Z80 *z80, uint16_t address);
 void write_byte(struct Z80 *z80, u_int16_t address, uint8_t value);
 void load_rom(struct Z80 *z80, const char *rom_filename);
 
 void step_instruction(struct Z80 *z80);
 
-uint8_t airth_inc(struct Z80 *z80, uint8_t v);
+uint8_t arith_inc(struct Z80 *z80, uint8_t v);
+uint8_t arith_dec(struct Z80 *z80, uint8_t v);
 
 void XOR_AF(struct Z80 *z80);
+
+void DEC_0D(struct Z80 *z80);
 
 void INC_14(struct Z80 *z80);
 void INC_1C(struct Z80 *z80);

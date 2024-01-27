@@ -27,6 +27,12 @@ uint8_t fetch_byte(struct Z80 *z80) {
     return z80->memory[z80->pc++];
 }
 
+uint16_t fetch_word(struct Z80 *z80) {
+    uint8_t lsb = fetch_byte(z80);
+    uint8_t msb = fetch_byte(z80);
+    return (msb << 8) | lsb;
+}
+
 uint8_t address_byte(struct Z80 *z80, uint16_t address) {
     return z80->memory[address];
 }
@@ -53,11 +59,22 @@ void load_rom(struct Z80 *z80, const char *rom_filename) {
     memcpy(z80->memory, buffer, ROM_SIZE);
 }
 
-uint8_t airth_inc(struct Z80 *z80, uint8_t v) {
+uint8_t arith_inc(struct Z80 *z80, uint8_t v) {
     uint8_t n = v + 1;
 
     z80->af &= 0xFF10;
     z80->af |= (v == 0xF) << FLAG_H;
+    z80->af |= (n == 0) << FLAG_Z;
+
+    return n;
+}
+
+uint8_t arith_dec(struct Z80 *z80, uint8_t v) {
+    uint8_t n = v - 1;
+
+    z80->af &= 0xFF00;
+    z80->af |= 1 << FLAG_N;
+    z80->af |= (v == 0) << FLAG_H;
     z80->af |= (n == 0) << FLAG_Z;
 
     return n;
@@ -70,19 +87,23 @@ void step_instruction(struct Z80 *z80) {
             z80->elapsed_cycles = 4;
             break;
 
+        case 0x0D: // DEC C
+            DEC_0D(z80);
+            break;
+
         case 0x0E: // LD C n
             LD_0E(z80);
             break;
 
-        case 0x11:
+        case 0x11: // LD DE, n16
             LD_11(z80);
             break;
 
-        case 0x12:
+        case 0x12: // LD (DE), A
             LD_12(z80);
             break;
 
-        case 0x14:
+        case 0x14: // INC D
             INC_14(z80);
             break;
 
@@ -121,10 +142,7 @@ void step_instruction(struct Z80 *z80) {
 }
 
 void JP_C3(struct Z80 *z80) { // JP nn
-    uint8_t lsb = fetch_byte(z80);
-    uint8_t msb = fetch_byte(z80);
-
-    z80->pc = (msb << 8) | lsb;
+    z80->pc = fetch_word(z80);
     z80->elapsed_cycles = 16;
 }
 
@@ -137,10 +155,7 @@ void XOR_AF(struct Z80 *z80) { // XOR A, A
 }
 
 void LD_11(struct Z80 *z80) { // LD DE, nn
-    uint8_t lsb = fetch_byte(z80);
-    uint8_t msb = fetch_byte(z80);
-
-    z80->de = (msb << 8) | lsb;
+    z80->de = fetch_word(z80);
     z80->elapsed_cycles = 12;
 }
 
@@ -149,8 +164,13 @@ void LD_12(struct Z80 *z80) { // LD (DE), A
     z80->elapsed_cycles = 8;
 }
 
+void DEC_0D(struct Z80 *z80) { // INC C 
+    z80->bc = (z80->bc & 0xFF00) | arith_dec(z80, z80->bc & 0xFF);
+    z80->elapsed_cycles = 4;
+}
+
 void INC_14(struct Z80 *z80) { // INC D
-    z80->de = (z80->de & 0x00FF) | (airth_inc(z80, z80->de >> 8) << 8);
+    z80->de = (z80->de & 0x00FF) | (arith_inc(z80, z80->de >> 8) << 8);
     z80->elapsed_cycles = 4;
 }
 
@@ -168,7 +188,7 @@ void INC_14(struct Z80 *z80) { // INC D
 // }
 
 void INC_1C(struct Z80 *z80) { // INC E 
-    z80->de = (z80->de & 0xFF00) | airth_inc(z80, z80->de & 0xFF);
+    z80->de = (z80->de & 0xFF00) | arith_inc(z80, z80->de & 0xFF);
     z80->elapsed_cycles = 4;
 }
 
@@ -184,10 +204,7 @@ void JR_20(struct Z80 *z80) { // JR NZ, s8
 }
 
 void LD_21(struct Z80 *z80) { // LD HL, nn
-    uint8_t lsb = fetch_byte(z80);
-    uint8_t msb = fetch_byte(z80);
-
-    z80->hl = (msb << 8) | lsb;
+    z80->hl = fetch_word(z80);
     z80->elapsed_cycles = 12;
 }
 
