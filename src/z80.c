@@ -33,6 +33,12 @@ uint16_t fetch_word(struct Z80 *z80) {
     return (msb << 8) | lsb;
 }
 
+void push_word(struct Z80 *z80, uint16_t word) {
+    z80->memory[z80->sp-1] = word >> 8;
+    z80->memory[z80->sp-2] = word & 0xFF;
+    z80->sp -= 2;
+}
+
 uint8_t address_byte(struct Z80 *z80, uint16_t address) {
     return z80->memory[address];
 }
@@ -139,12 +145,20 @@ void step_instruction(struct Z80 *z80) {
             LD_78(z80);
             break;
 
+        case 0x7D: // LD A, B
+            LD_7D(z80);
+            break;
+
         case 0xAF: // XOR A, A
             XOR_AF(z80);
             break;
 
         case 0xC3: // JP nn
             JP_C3(z80);
+            break;
+
+        case 0xCD: // CALL a16
+            CALL_CD(z80);
             break;
 
         case 0xE0: // LD (a8), A
@@ -262,6 +276,12 @@ void LD_78(struct Z80 *z80) { // LD A, B
     z80->elapsed_cycles = 4;
 }
 
+void LD_7D(struct Z80 *z80) { // LD A, L
+    z80->af &= 0x00FF;
+    z80->af |= (z80->hl & 0x00FF) << 8;
+    z80->elapsed_cycles = 4;
+}
+
 void LD_E0(struct Z80 *z80) { // LD (a8), A
     write_byte(z80, 0xFF00 + fetch_byte(z80), z80->af >> 8);
     z80->elapsed_cycles = 12;
@@ -275,4 +295,11 @@ void LD_EA(struct Z80 *z80) { // LD (a16), A
 void DI_F3(struct Z80 *z80) { // DI (disable interrupts)
     z80->ime = false;
     z80->elapsed_cycles = 4;
+}
+
+void CALL_CD(struct Z80 *z80) { // CALL a16
+    uint16_t a = fetch_word(z80);
+    push_word(z80, z80->pc);
+    z80->pc = a;
+    z80->elapsed_cycles = 24;
 }

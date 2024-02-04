@@ -36,6 +36,11 @@ int main(int argc, char *argv[]) {
             step_instruction(z80);
 
         z80->elapsed_cycles--;
+        if (z80->memory[0xff02] == 0x81) {
+            char c = z80->memory[0xff01];
+            printf("%c", c);
+            z80->memory[0xff02] = 0x0;
+        }
     }
 
     SDL_close();

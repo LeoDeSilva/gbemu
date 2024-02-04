@@ -60,7 +60,10 @@ void LD_31(struct Z80 *z80);
 void LD_3E(struct Z80 *z80);
 void LD_47(struct Z80 *z80);
 void LD_78(struct Z80 *z80);
+void LD_7D(struct Z80 *z80);
 void LD_E0(struct Z80 *z80);
 void LD_EA(struct Z80 *z80);
 
 void DI_F3(struct Z80 *z80);
+
+void CALL_CD(struct Z80 *z80);
