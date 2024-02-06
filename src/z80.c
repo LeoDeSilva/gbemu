@@ -39,6 +39,13 @@ void push_word(struct Z80 *z80, uint16_t word) {
     z80->sp -= 2;
 }
 
+uint16_t pop_word(struct Z80 *z80) {
+    //sp points to the low byte initially
+    uint16_t word = (z80->memory[z80->sp + 1] << 8) | z80->memory[z80->sp];
+    z80->sp += 2;
+    return word;
+}
+
 uint8_t address_byte(struct Z80 *z80, uint16_t address) {
     return z80->memory[address];
 }
@@ -93,6 +100,14 @@ void step_instruction(struct Z80 *z80) {
             z80->elapsed_cycles = 4;
             break;
 
+        case 0x01: // NOP
+            LD_01(z80);
+            break;
+
+        case 0x03: // INC BC
+            INC_03(z80);
+            break;
+
         case 0x0D: // DEC C
             DEC_0D(z80);
             break;
@@ -117,12 +132,20 @@ void step_instruction(struct Z80 *z80) {
             INC_1C(z80);
             break;
 
+        case 0x18: // JR s8
+            JR_18(z80);
+            break;
+
         case 0x20: // JR, NZ, s8
             JR_20(z80);
             break;
 
         case 0x21: // LD HL, nn
             LD_21(z80);
+            break;
+
+        case 0x23: // INC HL
+            INC_23(z80);
             break;
 
         case 0x2A: // LD HL, nn
@@ -145,7 +168,11 @@ void step_instruction(struct Z80 *z80) {
             LD_78(z80);
             break;
 
-        case 0x7D: // LD A, B
+        case 0x7C: // LD A, H
+            LD_7C(z80);
+            break;
+
+        case 0x7D: // LD A, L
             LD_7D(z80);
             break;
 
@@ -157,12 +184,40 @@ void step_instruction(struct Z80 *z80) {
             JP_C3(z80);
             break;
 
+        case 0xC1: // POP BC
+            POP_C1(z80);
+            break;
+
+        case 0xC5: // PUSH BC
+            PUSH_C5(z80);
+            break;
+
         case 0xCD: // CALL a16
             CALL_CD(z80);
             break;
 
+        case 0xC9: // RET 
+            RET_C9(z80);
+            break;
+
         case 0xE0: // LD (a8), A
             LD_E0(z80);
+            break;
+
+        case 0xE1: // POP HL
+            POP_E1(z80);
+            break;
+
+        case 0xE5: // PUSH HL
+            PUSH_E5(z80);
+            break;
+
+        case 0xF1: // POP AF
+            POP_F1(z80);
+            break;
+
+        case 0xF5: // PUSH AF
+            PUSH_F5(z80);
             break;
 
         case 0xEA: // LD (a16), A
@@ -207,8 +262,24 @@ void INC_1C(struct Z80 *z80) { // INC E
     z80->elapsed_cycles = 4;
 }
 
+void INC_03(struct Z80 *z80) { // INC BC
+    z80->bc++;
+    z80->elapsed_cycles = 8;
+}
+
+void INC_23(struct Z80 *z80) { // INC HL
+    z80->hl++;
+    z80->elapsed_cycles = 8;
+}
+
+void JR_18(struct Z80 *z80) { // JR s8
+    int8_t s = fetch_byte(z80);
+    z80->pc += s;
+    z80->elapsed_cycles = 12;
+}
+
 void JR_20(struct Z80 *z80) { // JR NZ, s8
-    int s = ((fetch_byte(z80) ^ 0x80) - 0x80); // convert byte in to 2s compliment offset
+    int8_t s = fetch_byte(z80);
 
     if ((z80->af & (1 << FLAG_Z)) == 0) {
         z80->pc += s;
@@ -216,6 +287,13 @@ void JR_20(struct Z80 *z80) { // JR NZ, s8
     } else {
         z80->elapsed_cycles = 8;
     }
+}
+
+// LOAD Instructions
+
+void LD_01(struct Z80 *z80) { // LD BC, d16
+    z80->bc = fetch_word(z80);
+    z80->elapsed_cycles = 12;
 }
 
 void LD_11(struct Z80 *z80) { // LD DE, nn
@@ -276,6 +354,12 @@ void LD_78(struct Z80 *z80) { // LD A, B
     z80->elapsed_cycles = 4;
 }
 
+void LD_7C(struct Z80 *z80) { // LD A, H
+    z80->af &= 0x00FF;
+    z80->af |= z80->hl & 0xFF00;
+    z80->elapsed_cycles = 4;
+}
+
 void LD_7D(struct Z80 *z80) { // LD A, L
     z80->af &= 0x00FF;
     z80->af |= (z80->hl & 0x00FF) << 8;
@@ -302,4 +386,43 @@ void CALL_CD(struct Z80 *z80) { // CALL a16
     push_word(z80, z80->pc);
     z80->pc = a;
     z80->elapsed_cycles = 24;
+}
+
+void RET_C9(struct Z80 *z80) { // RET
+    z80->pc = pop_word(z80);
+    z80->elapsed_cycles = 16;
+}
+
+// Register/Stack operations
+
+void POP_C1(struct Z80 *z80) { // POP BC
+    z80->bc = pop_word(z80);
+    printf("poped bc: %04x\n", z80->bc);
+    z80->elapsed_cycles = 16;
+}
+
+void PUSH_C5(struct Z80 *z80) { // PUSH BC
+    printf("pushed bc: %04x\n", z80->bc);
+    push_word(z80, z80->bc);
+    z80->elapsed_cycles = 16;
+}
+
+void POP_E1(struct Z80 *z80) { // POP HL
+    z80->hl = pop_word(z80);
+    z80->elapsed_cycles = 16;
+}
+
+void PUSH_E5(struct Z80 *z80) { // PUSH HL
+    push_word(z80, z80->hl);
+    z80->elapsed_cycles = 16;
+}
+
+void POP_F1(struct Z80 *z80) { // POP AF
+    z80->af = pop_word(z80);
+    z80->elapsed_cycles = 16;
+}
+
+void PUSH_F5(struct Z80 *z80) { // PUSH AF
+    push_word(z80, z80->af);
+    z80->elapsed_cycles = 16;
 }
