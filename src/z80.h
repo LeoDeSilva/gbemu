@@ -1,3 +1,6 @@
+#ifndef Z80_H
+#define Z80_H
+
 #include "stdint.h"
 #include "stdbool.h"
 
@@ -38,6 +41,13 @@ void step_instruction(struct Z80 *z80);
 
 uint8_t arith_inc(struct Z80 *z80, uint8_t v);
 uint8_t arith_dec(struct Z80 *z80, uint8_t v);
+
+static void (*unprefixed[0xFF])(struct Z80 *z80);
+static void (*prefixed[0xFF])(struct Z80 *z80);
+void populate_instruction_set();
+
+void NOP(struct Z80 *z80);
+void UNDEFINED(struct Z80 *z80);
 
 void XOR_AF(struct Z80 *z80);
 
@@ -82,3 +92,5 @@ void POP_F1(struct Z80 *z80);
 void PUSH_C5(struct Z80 *z80);
 void PUSH_E5(struct Z80 *z80);
 void PUSH_F5(struct Z80 *z80);
+
+#endif

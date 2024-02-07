@@ -20,8 +20,19 @@ struct Z80 *init_z80_chip(void) {
 
     z80->elapsed_cycles = 0;
 
+    populate_instruction_set();
     return z80;
 }
+
+void populate_instruction_set() {
+    for (int i = 0; i < 0xFF; i++) {
+        unprefixed[i] = UNDEFINED;
+    }
+
+    unprefixed[0x00] = NOP;
+    unprefixed[0x01] = LD_01;
+}
+
 
 uint8_t fetch_byte(struct Z80 *z80) {
     return z80->memory[z80->pc++];
@@ -232,6 +243,16 @@ void step_instruction(struct Z80 *z80) {
             printf("%02x\n", op_byte);
             z80->is_running_flag = false;
     }
+}
+
+void NOP(struct Z80 *z80) {
+    z80->elapsed_cycles = 4;
+}
+
+void UNDEFINED(struct Z80 *z80) {
+    printf("%02x\n", z80->memory[z80->pc-1]);
+    z80->is_running_flag = false;
+    z80->elapsed_cycles = 4;
 }
 
 void JP_C3(struct Z80 *z80) { // JP nn
