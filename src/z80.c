@@ -44,6 +44,7 @@ void populate_instruction_set() {
     unprefixed[0x20] = JR_20;
     unprefixed[0x21] = LD_21;
     unprefixed[0x23] = INC_23;
+    unprefixed[0x28] = JR_28;
     unprefixed[0x2A] = LD_2A;
 
     unprefixed[0x31] = LD_31;
@@ -57,6 +58,8 @@ void populate_instruction_set() {
 
     unprefixed[0xAF] = XOR_AF;
 
+    unprefixed[0xB1] = OR_B1;
+
     unprefixed[0xC1] = POP_C1;
     unprefixed[0xC3] = JP_C3;
     unprefixed[0xC5] = PUSH_C5;
@@ -69,9 +72,12 @@ void populate_instruction_set() {
     unprefixed[0xE5] = PUSH_E5;
     unprefixed[0xEA] = LD_EA;
 
+    unprefixed[0xF0] = LD_F0;
     unprefixed[0xF1] = POP_F1;
     unprefixed[0xF3] = DI_F3;
     unprefixed[0xF5] = PUSH_F5;
+    unprefixed[0xFA] = LD_FA;
+    unprefixed[0xFE] = CP_FE;
 }
 
 
@@ -171,11 +177,17 @@ void UNDEFINED(struct Z80 *z80) {
 
 // Logical Operations =====
 
-void XOR_AF(struct Z80 *z80) { // XOR A, A
-    uint8_t n = z80->af >> 8;
-
+void OR_B1(struct Z80 *z80) { // OR C
+    uint8_t n = (z80->af >> 8) | (z80->bc & 0xFF);
     z80->af &= 0x0000;
-    z80->af |= ((n^n) << 8) | 1 << FLAG_Z;
+    z80->af |= (n << 8) | (n == 0) << FLAG_Z;
+    z80->elapsed_cycles = 4;
+}
+
+void XOR_AF(struct Z80 *z80) { // XOR A, A
+    uint8_t a = z80->af >> 8;
+    z80->af &= 0x0000;
+    z80->af |= ((a^a) << 8) | 1 << FLAG_Z;
     z80->elapsed_cycles = 4;
 }
 
@@ -210,6 +222,16 @@ void INC_23(struct Z80 *z80) { // INC HL
     z80->elapsed_cycles = 8;
 }
 
+// Compare Instructions =====
+void CP_FE(struct Z80 *z80) {
+    uint8_t a = z80->af >> 8;
+    uint8_t n = fetch_byte(z80);
+    uint8_t f = 0b01000000 | (a - n == 0) << FLAG_Z | (a - n < 0) << FLAG_C | ((a & 0xF) - (n & 0xF) < 0) << FLAG_H;
+    z80->af &= 0xFF00;
+    z80->af |= f;
+    z80->elapsed_cycles = 8;
+}
+
 // JUMP Instructions ====
 
 void JP_C3(struct Z80 *z80) { // JP nn
@@ -228,6 +250,17 @@ void JR_20(struct Z80 *z80) { // JR NZ, s8
     int8_t s = fetch_byte(z80);
 
     if ((z80->af & (1 << FLAG_Z)) == 0) {
+        z80->pc += s;
+        z80->elapsed_cycles = 12;
+    } else {
+        z80->elapsed_cycles = 8;
+    }
+}
+
+void JR_28(struct Z80 *z80) { // JR Z, s8
+    int8_t s = fetch_byte(z80);
+
+    if ((z80->af & (1 << FLAG_Z)) != 0) {
         z80->pc += s;
         z80->elapsed_cycles = 12;
     } else {
@@ -317,9 +350,20 @@ void LD_E0(struct Z80 *z80) { // LD (a8), A
     z80->elapsed_cycles = 12;
 }
 
+void LD_F0(struct Z80 *z80) { // LD A, a8
+    z80->af &= 0x00FF;
+    z80->af |= (address_byte(z80, 0xFF00 + fetch_byte(z80))) << 8;
+    z80->elapsed_cycles = 12;
+}
 
 void LD_EA(struct Z80 *z80) { // LD (a16), A
     write_byte(z80, fetch_word(z80), z80->af >> 8);
+    z80->elapsed_cycles = 16;
+}
+
+void LD_FA(struct Z80 *z80) { // LD A, (a16)
+    z80->af &= 0x00FF;
+    z80->af |= address_byte(z80, fetch_word(z80)) << 8;
     z80->elapsed_cycles = 16;
 }
 
@@ -342,12 +386,10 @@ void RET_C9(struct Z80 *z80) { // RET
 
 void POP_C1(struct Z80 *z80) { // POP BC
     z80->bc = pop_word(z80);
-    printf("poped bc: %04x\n", z80->bc);
     z80->elapsed_cycles = 16;
 }
 
 void PUSH_C5(struct Z80 *z80) { // PUSH BC
-    printf("pushed bc: %04x\n", z80->bc);
     push_word(z80, z80->bc);
     z80->elapsed_cycles = 16;
 }

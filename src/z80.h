@@ -49,7 +49,10 @@ void populate_instruction_set();
 void NOP(struct Z80 *z80);
 void UNDEFINED(struct Z80 *z80);
 
+void OR_B1(struct Z80 *z80);
 void XOR_AF(struct Z80 *z80);
+
+void CP_FE(struct Z80 *z80);
 
 void DEC_0D(struct Z80 *z80);
 
@@ -62,6 +65,7 @@ void LD_0E(struct Z80 *z80);
 
 void JR_18(struct Z80 *z80);
 void JR_20(struct Z80 *z80);
+void JR_28(struct Z80 *z80);
 
 void JP_C3(struct Z80 *z80);
 
@@ -79,6 +83,8 @@ void LD_7C(struct Z80 *z80);
 void LD_7D(struct Z80 *z80);
 void LD_E0(struct Z80 *z80);
 void LD_EA(struct Z80 *z80);
+void LD_F0(struct Z80 *z80);
+void LD_FA(struct Z80 *z80);
 
 void DI_F3(struct Z80 *z80);
 
