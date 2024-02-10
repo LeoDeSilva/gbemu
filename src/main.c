@@ -17,9 +17,11 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
+
     load_rom(z80, rom_filename);
 
     z80->is_running_flag = true;
+    z80->is_stepping = false;
     while (z80->is_running_flag) {
         SDL_Event e;
         while (SDL_PollEvent(&e) > 0) {
@@ -32,8 +34,18 @@ int main(int argc, char *argv[]) {
             SDL_update();
         }
 
-        if (z80->elapsed_cycles == 0)
+        if (z80->elapsed_cycles == 0) {
+            // if (z80->pc == 0xC414)
+            //     z80->is_stepping = true;
+
             step_instruction(z80);
+            /*Flush input stream in case \n left out*/
+            if (z80->is_stepping) {
+                char ch = getchar();
+                if (ch == 'r')
+                    z80->is_stepping = false;
+            }
+        }
 
         z80->elapsed_cycles--;
         if (z80->memory[0xff02] == 0x81) {

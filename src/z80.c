@@ -9,14 +9,21 @@ struct Z80 *init_z80_chip(void) {
         z80->memory[i] = 0;
     }
 
-
-    z80->af = 0x0180;
+    z80->af = 0x01B0;
     z80->bc = 0x0013;
     z80->de = 0x00D8;
     z80->hl = 0x014D;
 
     z80->pc = 0x0100;
     z80->sp = 0xFFFE;
+
+    // z80->af = 0x0180;
+    // z80->bc = 0x0013;
+    // z80->de = 0x00D8;
+    // z80->hl = 0x014D;
+
+    // z80->pc = 0x0100;
+    // z80->sp = 0xFFFE;
 
     z80->elapsed_cycles = 0;
 
@@ -62,6 +69,7 @@ void populate_instruction_set() {
 
     unprefixed[0xC1] = POP_C1;
     unprefixed[0xC3] = JP_C3;
+    unprefixed[0xC4] = CALL_C4;
     unprefixed[0xC5] = PUSH_C5;
     unprefixed[0xC9] = RET_C9;
     unprefixed[0xCD] = CALL_CD;
@@ -70,6 +78,7 @@ void populate_instruction_set() {
     unprefixed[0xE1] = POP_E1;
     unprefixed[0xE5] = PUSH_E5;
     unprefixed[0xE5] = PUSH_E5;
+    unprefixed[0xE6] = AND_E6;
     unprefixed[0xEA] = LD_EA;
 
     unprefixed[0xF0] = LD_F0;
@@ -138,7 +147,7 @@ uint8_t arith_inc(struct Z80 *z80, uint8_t v) {
     uint8_t n = v + 1;
 
     z80->af &= 0xFF10;
-    z80->af |= (v == 0xF) << FLAG_H;
+    z80->af |= ((v & 0xF) == 0xF) << FLAG_H;
     z80->af |= (n == 0) << FLAG_Z;
 
     return n;
@@ -149,7 +158,7 @@ uint8_t arith_dec(struct Z80 *z80, uint8_t v) {
 
     z80->af &= 0xFF00;
     z80->af |= 1 << FLAG_N;
-    z80->af |= (v == 0) << FLAG_H;
+    z80->af |= ((v & 0xF) == 0) << FLAG_H;
     z80->af |= (n == 0) << FLAG_Z;
 
     return n;
@@ -158,6 +167,9 @@ uint8_t arith_dec(struct Z80 *z80, uint8_t v) {
 
 void step_instruction(struct Z80 *z80) {
     uint8_t op_byte = fetch_byte(z80);
+    // printf("%04x: %02x\n", z80->pc - 1, op_byte);
+    // printf("af = %04x, bc = %04x\n", z80->af, z80->bc);
+    // printf("de = %04x, hl = %04x\n", z80->de, z80->hl);
     unprefixed[op_byte](z80); // unless op_byte = CB
 }
 
@@ -189,6 +201,15 @@ void XOR_AF(struct Z80 *z80) { // XOR A, A
     z80->af &= 0x0000;
     z80->af |= ((a^a) << 8) | 1 << FLAG_Z;
     z80->elapsed_cycles = 4;
+}
+
+void AND_E6(struct Z80 *z80) { // AND d8
+    uint8_t a = z80->af >> 8;
+    uint8_t n = fetch_byte(z80);
+    z80->af &= 0x0000;
+    uint8_t f = 0b00100000 | ((a & n) == 0) << FLAG_Z;
+    z80->af |= ((a&n) << 8) | f;
+    z80->elapsed_cycles = 8;
 }
 
 
@@ -352,7 +373,8 @@ void LD_E0(struct Z80 *z80) { // LD (a8), A
 
 void LD_F0(struct Z80 *z80) { // LD A, a8
     z80->af &= 0x00FF;
-    z80->af |= (address_byte(z80, 0xFF00 + fetch_byte(z80))) << 8;
+    uint8_t n = fetch_byte(z80);
+    // z80->af |= (address_byte(z80, 0xFF00 + fetch_byte(z80))) << 8;
     z80->elapsed_cycles = 12;
 }
 
@@ -368,6 +390,17 @@ void LD_FA(struct Z80 *z80) { // LD A, (a16)
 }
 
 // Stack control flow =====
+
+void CALL_C4(struct Z80 *z80) { // CALL NZ, a16
+    uint16_t a = fetch_word(z80);
+    if ((z80->af & (1 << FLAG_Z)) == 0) {
+        push_word(z80, z80->pc);
+        z80->pc = a;
+        z80->elapsed_cycles = 24;
+    } else {
+        z80->elapsed_cycles = 12;
+    }
+}
 
 void CALL_CD(struct Z80 *z80) { // CALL a16
     uint16_t a = fetch_word(z80);

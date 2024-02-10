@@ -23,6 +23,7 @@ struct Z80 {
     uint16_t sp;
 
     bool is_running_flag;    
+    bool is_stepping;    
     bool ime;    
 
     uint8_t memory[MEM_SIZE];
@@ -51,6 +52,7 @@ void UNDEFINED(struct Z80 *z80);
 
 void OR_B1(struct Z80 *z80);
 void XOR_AF(struct Z80 *z80);
+void AND_E6(struct Z80 *z80);
 
 void CP_FE(struct Z80 *z80);
 
@@ -88,6 +90,7 @@ void LD_FA(struct Z80 *z80);
 
 void DI_F3(struct Z80 *z80);
 
+void CALL_C4(struct Z80 *z80);
 void CALL_CD(struct Z80 *z80);
 void RET_C9(struct Z80 *z80);
 
