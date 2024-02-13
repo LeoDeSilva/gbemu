@@ -57,11 +57,14 @@ void AND_E6(struct Z80 *z80);
 void CP_FE(struct Z80 *z80);
 
 void DEC_0D(struct Z80 *z80);
+void DEC_05(struct Z80 *z80);
 
 void INC_03(struct Z80 *z80);
 void INC_14(struct Z80 *z80);
 void INC_1C(struct Z80 *z80);
 void INC_23(struct Z80 *z80);
+void INC_24(struct Z80 *z80);
+void INC_2C(struct Z80 *z80);
 
 void LD_0E(struct Z80 *z80);
 
@@ -72,14 +75,15 @@ void JR_28(struct Z80 *z80);
 void JP_C3(struct Z80 *z80);
 
 void LD_01(struct Z80 *z80);
+void LD_06(struct Z80 *z80);
 void LD_11(struct Z80 *z80);
 void LD_12(struct Z80 *z80);
-void LD_21(struct Z80 *z80);
 void LD_21(struct Z80 *z80);
 void LD_2A(struct Z80 *z80);
 void LD_31(struct Z80 *z80);
 void LD_3E(struct Z80 *z80);
 void LD_47(struct Z80 *z80);
+void LD_77(struct Z80 *z80);
 void LD_78(struct Z80 *z80);
 void LD_7C(struct Z80 *z80);
 void LD_7D(struct Z80 *z80);

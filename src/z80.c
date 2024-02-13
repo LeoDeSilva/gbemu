@@ -39,6 +39,8 @@ void populate_instruction_set() {
     unprefixed[0x00] = NOP;
     unprefixed[0x01] = LD_01;
     unprefixed[0x03] = INC_03;
+    unprefixed[0x05] = DEC_05;
+    unprefixed[0x06] = LD_06;
     unprefixed[0x0D] = DEC_0D;
     unprefixed[0x0E] = LD_0E;
 
@@ -51,14 +53,17 @@ void populate_instruction_set() {
     unprefixed[0x20] = JR_20;
     unprefixed[0x21] = LD_21;
     unprefixed[0x23] = INC_23;
+    unprefixed[0x24] = INC_24;
     unprefixed[0x28] = JR_28;
     unprefixed[0x2A] = LD_2A;
+    unprefixed[0x2C] = INC_2C;
 
     unprefixed[0x31] = LD_31;
     unprefixed[0x3E] = LD_3E;
 
     unprefixed[0x47] = LD_47;
 
+    unprefixed[0x77] = LD_77;
     unprefixed[0x78] = LD_78;
     unprefixed[0x7C] = LD_7C;
     unprefixed[0x7D] = LD_7D;
@@ -167,9 +172,9 @@ uint8_t arith_dec(struct Z80 *z80, uint8_t v) {
 
 void step_instruction(struct Z80 *z80) {
     uint8_t op_byte = fetch_byte(z80);
-    // printf("%04x: %02x\n", z80->pc - 1, op_byte);
-    // printf("af = %04x, bc = %04x\n", z80->af, z80->bc);
-    // printf("de = %04x, hl = %04x\n", z80->de, z80->hl);
+    printf("%04x: %02x\n", z80->pc - 1, op_byte);
+    printf("af = %04x, bc = %04x\n", z80->af, z80->bc);
+    printf("de = %04x, hl = %04x\n", z80->de, z80->hl);
     unprefixed[op_byte](z80); // unless op_byte = CB
 }
 
@@ -215,7 +220,12 @@ void AND_E6(struct Z80 *z80) { // AND d8
 
 // DEC Instructions =====
 
-void DEC_0D(struct Z80 *z80) { // INC C 
+void DEC_05(struct Z80 *z80) { // DEC B 
+    z80->bc = (z80->bc & 0x00FF) | arith_dec(z80, z80->bc >> 8) << 8;
+    z80->elapsed_cycles = 4;
+}
+
+void DEC_0D(struct Z80 *z80) { // DEC C 
     z80->bc = (z80->bc & 0xFF00) | arith_dec(z80, z80->bc & 0xFF);
     z80->elapsed_cycles = 4;
 }
@@ -241,6 +251,16 @@ void INC_03(struct Z80 *z80) { // INC BC
 void INC_23(struct Z80 *z80) { // INC HL
     z80->hl++;
     z80->elapsed_cycles = 8;
+}
+
+void INC_24(struct Z80 *z80) { // INC H
+    z80->hl = (z80->hl & 0x00FF) | arith_inc(z80, z80->hl >> 8) << 8;
+    z80->elapsed_cycles = 8;
+}
+
+void INC_2C(struct Z80 *z80) { // INC L 
+    z80->hl = (z80->hl & 0xFF00) | arith_inc(z80, z80->hl & 0xFF);
+    z80->elapsed_cycles = 4;
 }
 
 // Compare Instructions =====
@@ -333,7 +353,14 @@ void LD_3E(struct Z80 *z80) { // LD A, d8
     z80->elapsed_cycles = 8;
 }
 
-void LD_0E(struct Z80 *z80) { // LD C n
+void LD_06(struct Z80 *z80) { // LD B d8
+    uint8_t n = fetch_byte(z80);
+    z80->bc &= 0x00FF;
+    z80->bc |= n << 8;
+    z80->elapsed_cycles = 8;
+}
+
+void LD_0E(struct Z80 *z80) { // LD C d8
     uint8_t n = fetch_byte(z80);
     z80->bc &= 0xFF00;
     z80->bc |= n;
@@ -346,6 +373,11 @@ void LD_47(struct Z80 *z80) { // LD B, A
     z80->bc |= a << 8;
 
     z80->elapsed_cycles = 4;
+}
+
+void LD_77(struct Z80 *z80) { // LD (HL), A
+    write_byte(z80, z80->hl, z80->af >> 8);
+    z80->elapsed_cycles = 8;
 }
 
 void LD_78(struct Z80 *z80) { // LD A, B
