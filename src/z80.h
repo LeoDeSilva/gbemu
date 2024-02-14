@@ -51,8 +51,13 @@ void NOP(struct Z80 *z80);
 void UNDEFINED(struct Z80 *z80);
 
 void OR_B1(struct Z80 *z80);
+
+void XOR_A9(struct Z80 *z80);
 void XOR_AF(struct Z80 *z80);
+
 void AND_E6(struct Z80 *z80);
+
+void ADD_C6(struct Z80 *z80);
 
 void CP_FE(struct Z80 *z80);
 
@@ -60,6 +65,7 @@ void DEC_0D(struct Z80 *z80);
 void DEC_05(struct Z80 *z80);
 
 void INC_03(struct Z80 *z80);
+void INC_13(struct Z80 *z80);
 void INC_14(struct Z80 *z80);
 void INC_1C(struct Z80 *z80);
 void INC_23(struct Z80 *z80);
@@ -78,7 +84,9 @@ void LD_01(struct Z80 *z80);
 void LD_06(struct Z80 *z80);
 void LD_11(struct Z80 *z80);
 void LD_12(struct Z80 *z80);
+void LD_1A(struct Z80 *z80);
 void LD_21(struct Z80 *z80);
+void LD_22(struct Z80 *z80);
 void LD_2A(struct Z80 *z80);
 void LD_31(struct Z80 *z80);
 void LD_3E(struct Z80 *z80);
