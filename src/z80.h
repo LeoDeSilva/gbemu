@@ -55,6 +55,7 @@ void OR_B7(struct Z80 *z80);
 
 void XOR_A9(struct Z80 *z80);
 void XOR_AF(struct Z80 *z80);
+void XOR_AE(struct Z80 *z80);
 
 void AND_E6(struct Z80 *z80);
 
@@ -64,8 +65,9 @@ void SUB_D6(struct Z80 *z80);
 
 void CP_FE(struct Z80 *z80);
 
-void DEC_0D(struct Z80 *z80);
 void DEC_05(struct Z80 *z80);
+void DEC_0D(struct Z80 *z80);
+void DEC_2D(struct Z80 *z80);
 
 void INC_03(struct Z80 *z80);
 void INC_13(struct Z80 *z80);
@@ -90,11 +92,15 @@ void LD_12(struct Z80 *z80);
 void LD_1A(struct Z80 *z80);
 void LD_21(struct Z80 *z80);
 void LD_22(struct Z80 *z80);
+void LD_26(struct Z80 *z80);
 void LD_2A(struct Z80 *z80);
 void LD_31(struct Z80 *z80);
 void LD_32(struct Z80 *z80);
 void LD_3E(struct Z80 *z80);
+void LD_46(struct Z80 *z80);
 void LD_47(struct Z80 *z80);
+void LD_4E(struct Z80 *z80);
+void LD_56(struct Z80 *z80);
 void LD_77(struct Z80 *z80);
 void LD_78(struct Z80 *z80);
 void LD_7C(struct Z80 *z80);
