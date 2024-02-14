@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
         }
 
         if (z80->elapsed_cycles == 0) {
-            // if (z80->pc == 0xC3A4)
+            // if ((z80->af & 0xFF) == 0xc0)
             //     z80->is_stepping = true;
 
             step_instruction(z80);

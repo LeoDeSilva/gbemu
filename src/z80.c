@@ -62,6 +62,7 @@ void populate_instruction_set() {
     unprefixed[0x2C] = INC_2C;
 
     unprefixed[0x31] = LD_31;
+    unprefixed[0x32] = LD_32;
     unprefixed[0x3E] = LD_3E;
 
     unprefixed[0x47] = LD_47;
@@ -75,6 +76,7 @@ void populate_instruction_set() {
     unprefixed[0xAF] = XOR_AF;
 
     unprefixed[0xB1] = OR_B1;
+    unprefixed[0xB7] = OR_B7;
 
     unprefixed[0xC1] = POP_C1;
     unprefixed[0xC3] = JP_C3;
@@ -83,6 +85,9 @@ void populate_instruction_set() {
     unprefixed[0xC6] = ADD_C6;
     unprefixed[0xC9] = RET_C9;
     unprefixed[0xCD] = CALL_CD;
+
+    unprefixed[0xD5] = PUSH_D5;
+    unprefixed[0xD6] = SUB_D6;
 
     unprefixed[0xE0] = LD_E0;
     unprefixed[0xE1] = POP_E1;
@@ -163,6 +168,18 @@ uint8_t arith_add(struct Z80 *z80, uint8_t a, uint8_t b) {
     return n;
 }
 
+uint8_t arith_sub(struct Z80 *z80, uint8_t a, uint8_t b) {
+    uint8_t n = a - b;
+
+    z80->af &= 0xFF00;
+    z80->af |= (n == 0) << FLAG_Z;
+    z80->af |= 1 << FLAG_N;
+    z80->af |= (((a & 0xF) - (b & 0xF)) < 0) << FLAG_H;
+    z80->af |= (a - b < 0) << FLAG_C;
+
+    return n;
+}
+
 
 uint8_t arith_inc(struct Z80 *z80, uint8_t v) {
     uint8_t n = v + 1;
@@ -179,7 +196,7 @@ uint8_t arith_dec(struct Z80 *z80, uint8_t v) {
 
     z80->af &= 0xFF00;
     z80->af |= 1 << FLAG_N;
-    z80->af |= ((v & 0xF) == 0) << FLAG_H;
+    z80->af |= ((v & 0xF) - 1 < 0) << FLAG_H;
     z80->af |= (n == 0) << FLAG_Z;
 
     return n;
@@ -218,6 +235,13 @@ void OR_B1(struct Z80 *z80) { // OR C
     z80->elapsed_cycles = 4;
 }
 
+void OR_B7(struct Z80 *z80) { // OR A
+    uint8_t n = (z80->af >> 8) | (z80->af >> 8);
+    z80->af &= 0x0000;
+    z80->af |= (n << 8) | (n == 0) << FLAG_Z;
+    z80->elapsed_cycles = 4;
+}
+
 void XOR_A9(struct Z80 *z80) { // XOR C
     uint8_t n = (z80->af >> 8) ^ (z80->bc & 0xFF);
     z80->af &= 0x0000;
@@ -248,6 +272,14 @@ void ADD_C6(struct Z80 *z80) { // ADD d8
     uint8_t n = fetch_byte(z80);
     z80->af &= 0x00FF;
     z80->af |= (arith_add(z80, a, n)) << 8;
+    z80->elapsed_cycles = 8;
+}
+
+void SUB_D6(struct Z80 *z80) { // SUB d8
+    uint8_t a = z80->af >> 8;
+    uint8_t n = fetch_byte(z80);
+    z80->af &= 0x00FF;
+    z80->af |= (arith_sub(z80, a, n)) << 8;
     z80->elapsed_cycles = 8;
 }
 
@@ -397,6 +429,12 @@ void LD_31(struct Z80 *z80) { // LD SP, d16
     z80->elapsed_cycles = 12;
 }
 
+void LD_32(struct Z80 *z80) { // LD (HL-), A
+    write_byte(z80, z80->hl, z80->af >> 8);
+    z80->hl--;
+    z80->elapsed_cycles = 8;
+}
+
 void LD_3E(struct Z80 *z80) { // LD A, d8 
     z80->af &= 0x00FF;
     z80->af |= fetch_byte(z80) << 8;
@@ -506,6 +544,11 @@ void POP_C1(struct Z80 *z80) { // POP BC
 
 void PUSH_C5(struct Z80 *z80) { // PUSH BC
     push_word(z80, z80->bc);
+    z80->elapsed_cycles = 16;
+}
+
+void PUSH_D5(struct Z80 *z80) { // PUSH DE
+    push_word(z80, z80->de);
     z80->elapsed_cycles = 16;
 }
 

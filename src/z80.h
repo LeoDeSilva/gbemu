@@ -51,6 +51,7 @@ void NOP(struct Z80 *z80);
 void UNDEFINED(struct Z80 *z80);
 
 void OR_B1(struct Z80 *z80);
+void OR_B7(struct Z80 *z80);
 
 void XOR_A9(struct Z80 *z80);
 void XOR_AF(struct Z80 *z80);
@@ -58,6 +59,8 @@ void XOR_AF(struct Z80 *z80);
 void AND_E6(struct Z80 *z80);
 
 void ADD_C6(struct Z80 *z80);
+
+void SUB_D6(struct Z80 *z80);
 
 void CP_FE(struct Z80 *z80);
 
@@ -89,6 +92,7 @@ void LD_21(struct Z80 *z80);
 void LD_22(struct Z80 *z80);
 void LD_2A(struct Z80 *z80);
 void LD_31(struct Z80 *z80);
+void LD_32(struct Z80 *z80);
 void LD_3E(struct Z80 *z80);
 void LD_47(struct Z80 *z80);
 void LD_77(struct Z80 *z80);
@@ -111,6 +115,7 @@ void POP_E1(struct Z80 *z80);
 void POP_F1(struct Z80 *z80);
 
 void PUSH_C5(struct Z80 *z80);
+void PUSH_D5(struct Z80 *z80);
 void PUSH_E5(struct Z80 *z80);
 void PUSH_F5(struct Z80 *z80);
 
