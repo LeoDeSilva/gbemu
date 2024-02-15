@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "z80.h"
 #include "unprefixed.h"
+#include "cb_prefixed.h"
 
 struct Z80 *init_z80_chip(void) {
     struct Z80 *z80 = malloc(sizeof(struct Z80));
@@ -29,6 +30,7 @@ struct Z80 *init_z80_chip(void) {
     z80->elapsed_cycles = 0;
 
     isa_populate_unprefixed(unprefixed);
+    isa_populate_prefixed(prefixed);
     return z80;
 }
 
@@ -133,9 +135,19 @@ uint8_t arith_dec(struct Z80 *z80, uint8_t v) {
 
 void step_instruction(struct Z80 *z80) {
     uint8_t op_byte = fetch_byte(z80);
-    printf("%04x: %02x\n", z80->pc - 1, op_byte);
-    printf("af = %04x, bc = %04x\n", z80->af, z80->bc);
-    printf("de = %04x, hl = %04x\n", z80->de, z80->hl);
-    printf("sp = %04x, ime = %d\n", z80->sp, z80->ime);
-    unprefixed[op_byte](z80); // unless op_byte = CB
+
+    if (op_byte == 0xcb) {
+        uint8_t cb_op_byte = fetch_byte(z80);
+        printf("%04x: cb %02x\n", z80->pc - 2, cb_op_byte);
+        printf("af = %04x, bc = %04x\n", z80->af, z80->bc);
+        printf("de = %04x, hl = %04x\n", z80->de, z80->hl);
+        printf("sp = %04x, ime = %d\n", z80->sp, z80->ime);
+        prefixed[cb_op_byte](z80);
+    } else {
+        printf("%04x: %02x\n", z80->pc - 1, op_byte);
+        printf("af = %04x, bc = %04x\n", z80->af, z80->bc);
+        printf("de = %04x, hl = %04x\n", z80->de, z80->hl);
+        printf("sp = %04x, ime = %d\n", z80->sp, z80->ime);
+        unprefixed[op_byte](z80); // unless op_byte = CB
+    }
 }
