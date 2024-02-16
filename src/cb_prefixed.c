@@ -13,25 +13,6 @@ void isa_populate_prefixed(void (*prefixed[0xFF])(struct Z80 *z80)) {
     prefixed[0x38] = SRL_38;
 }
 
-uint8_t logical_srl(struct Z80 *z80, uint8_t n) {
-    uint8_t carry = n & 1;
-    uint8_t rot = n >> 1;
-
-    z80->af &= 0xFF00;
-    z80->af |= (rot == 0) << FLAG_Z  | (carry == 1) << FLAG_C;
-    return rot;
-}
-
-uint8_t logical_rr(struct Z80 *z80, uint8_t n) {
-    uint8_t carry = n & 1;
-    uint8_t old_carry = (z80->af & (1 << FLAG_C)) >> FLAG_C;
-    uint8_t rot = n >> 1 | old_carry << 7;
-
-    z80->af &= 0xFF00;
-    z80->af |= (rot == 0) << FLAG_Z  | (carry == 1) << FLAG_C;
-    return rot;
-}
-
 void CB_UNDEFINED(struct Z80 *z80) {
     printf("0xcb%02x\n", z80->memory[z80->pc-1]);
     z80->is_running_flag = false;

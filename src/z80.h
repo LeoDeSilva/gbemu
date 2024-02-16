@@ -45,6 +45,8 @@ uint8_t arith_add(struct Z80 *z80, uint8_t a, uint8_t b);
 uint8_t arith_sub(struct Z80 *z80, uint8_t a, uint8_t b);
 uint8_t arith_inc(struct Z80 *z80, uint8_t v);
 uint8_t arith_dec(struct Z80 *z80, uint8_t v);
+uint8_t logical_srl(struct Z80 *z80, uint8_t n);
+uint8_t logical_rr(struct Z80 *z80, uint8_t n);
 
 void load_rom(struct Z80 *z80, const char *rom_filename);
 void step_instruction(struct Z80 *z80);

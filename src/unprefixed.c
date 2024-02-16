@@ -22,30 +22,44 @@ void isa_populate_unprefixed(void (*unprefixed[0xFF])(struct Z80 *z80)) {
     unprefixed[0x18] = JR_18;
     unprefixed[0x1A] = LD_1A;
     unprefixed[0x1C] = INC_1C;
+    unprefixed[0x1F] = RRA_1F;
 
     unprefixed[0x20] = JR_20;
     unprefixed[0x21] = LD_21;
     unprefixed[0x22] = LD_22;
     unprefixed[0x23] = INC_23;
     unprefixed[0x24] = INC_24;
+    unprefixed[0x25] = DEC_25;
     unprefixed[0x26] = LD_26;
     unprefixed[0x28] = JR_28;
     unprefixed[0x2A] = LD_2A;
     unprefixed[0x2C] = INC_2C;
     unprefixed[0x2D] = DEC_2D;
 
+    unprefixed[0x30] = JR_30;
     unprefixed[0x31] = LD_31;
     unprefixed[0x32] = LD_32;
+    unprefixed[0x35] = DEC_35;
+    unprefixed[0x3D] = DEC_3D;
     unprefixed[0x3E] = LD_3E;
 
-    unprefixed[0x4E] = LD_4E;
     unprefixed[0x46] = LD_46;
     unprefixed[0x47] = LD_47;
+    unprefixed[0x4E] = LD_4E;
+    unprefixed[0x4F] = LD_4F;
 
     unprefixed[0x56] = LD_56;
+    unprefixed[0x57] = LD_57;
+    unprefixed[0x5F] = LD_5F;
 
+    unprefixed[0x70] = LD_70;
+    unprefixed[0x71] = LD_71;
+    unprefixed[0x72] = LD_72;
     unprefixed[0x77] = LD_77;
     unprefixed[0x78] = LD_78;
+    unprefixed[0x79] = LD_79;
+    unprefixed[0x7A] = LD_7A;
+    unprefixed[0x7B] = LD_7B;
     unprefixed[0x7C] = LD_7C;
     unprefixed[0x7D] = LD_7D;
 
@@ -54,6 +68,7 @@ void isa_populate_unprefixed(void (*unprefixed[0xFF])(struct Z80 *z80)) {
     unprefixed[0xAF] = XOR_AF;
 
     unprefixed[0xB1] = OR_B1;
+    unprefixed[0xB6] = OR_B6;
     unprefixed[0xB7] = OR_B7;
 
     unprefixed[0xC1] = POP_C1;
@@ -61,9 +76,13 @@ void isa_populate_unprefixed(void (*unprefixed[0xFF])(struct Z80 *z80)) {
     unprefixed[0xC4] = CALL_C4;
     unprefixed[0xC5] = PUSH_C5;
     unprefixed[0xC6] = ADD_C6;
+    unprefixed[0xC8] = RET_C8;
     unprefixed[0xC9] = RET_C9;
     unprefixed[0xCD] = CALL_CD;
+    unprefixed[0xCE] = ADC_CE;
 
+    unprefixed[0xD0] = RET_D0;
+    unprefixed[0xD1] = POP_D1;
     unprefixed[0xD5] = PUSH_D5;
     unprefixed[0xD6] = SUB_D6;
 
@@ -73,6 +92,7 @@ void isa_populate_unprefixed(void (*unprefixed[0xFF])(struct Z80 *z80)) {
     unprefixed[0xE5] = PUSH_E5;
     unprefixed[0xE6] = AND_E6;
     unprefixed[0xEA] = LD_EA;
+    unprefixed[0xEE] = XOR_EE;
 
     unprefixed[0xF0] = LD_F0;
     unprefixed[0xF1] = POP_F1;
@@ -97,11 +117,25 @@ void UNDEFINED(struct Z80 *z80) {
 
 // Logical Operations =====
 
+void RRA_1F(struct Z80 *z80) { // RR A
+    uint8_t a = z80->af >> 8;
+    z80->af &= 0x00FF;
+    z80->af |= logical_rr(z80, a) << 8;
+    z80->elapsed_cycles = 4;
+}
+
 void OR_B1(struct Z80 *z80) { // OR C
     uint8_t n = (z80->af >> 8) | (z80->bc & 0xFF);
     z80->af &= 0x0000;
     z80->af |= (n << 8) | (n == 0) << FLAG_Z;
     z80->elapsed_cycles = 4;
+}
+
+void OR_B6(struct Z80 *z80) { // OR (HL)
+    uint8_t n = (z80->af >> 8) | address_byte(z80, z80->hl);
+    z80->af &= 0x0000;
+    z80->af |= (n << 8) | (n == 0) << FLAG_Z;
+    z80->elapsed_cycles = 8;
 }
 
 void OR_B7(struct Z80 *z80) { // OR A
@@ -132,6 +166,13 @@ void XOR_AF(struct Z80 *z80) { // XOR A, A
     z80->elapsed_cycles = 4;
 }
 
+void XOR_EE(struct Z80 *z80) { // XOR d8
+    uint8_t n = (z80->af >> 8) ^ fetch_byte(z80);
+    z80->af &= 0x0000;
+    z80->af |= (n << 8) | (n == 0) << FLAG_Z;
+    z80->elapsed_cycles = 8;
+}
+
 void AND_E6(struct Z80 *z80) { // AND d8
     uint8_t a = z80->af >> 8;
     uint8_t n = fetch_byte(z80);
@@ -146,6 +187,14 @@ void AND_E6(struct Z80 *z80) { // AND d8
 void ADD_C6(struct Z80 *z80) { // ADD d8
     uint8_t a = z80->af >> 8;
     uint8_t n = fetch_byte(z80);
+    z80->af &= 0x00FF;
+    z80->af |= (arith_add(z80, a, n)) << 8;
+    z80->elapsed_cycles = 8;
+}
+
+void ADC_CE(struct Z80 *z80) { // ADC d8
+    uint8_t a = z80->af >> 8;
+    uint8_t n = fetch_byte(z80) + ((z80->af & (1 << FLAG_C)) != 0);
     z80->af &= 0x00FF;
     z80->af |= (arith_add(z80, a, n)) << 8;
     z80->elapsed_cycles = 8;
@@ -175,10 +224,30 @@ void DEC_0D(struct Z80 *z80) { // DEC C
     z80->elapsed_cycles = 4;
 }
 
+void DEC_25(struct Z80 *z80) { // DEC H 
+    uint8_t h = z80->hl >> 8;
+    z80->hl &= 0x00FF;
+    z80->hl |= arith_dec(z80, h) << 8;
+    z80->elapsed_cycles = 4;
+}
+
 void DEC_2D(struct Z80 *z80) { // DEC L 
     uint8_t l = z80->hl & 0xFF;
     z80->hl &= 0xFF00;
     z80->hl |= arith_dec(z80, l);
+    z80->elapsed_cycles = 4;
+}
+
+void DEC_35(struct Z80 *z80) { // DEC (HL)
+    uint8_t n = address_byte(z80, z80->hl);
+    write_byte(z80, z80->hl, arith_dec(z80, n));
+    z80->elapsed_cycles = 12;
+}
+
+void DEC_3D(struct Z80 *z80) { // DEC A 
+    uint8_t a = z80->af >> 8;
+    z80->af &= 0x00FF;
+    z80->af |= arith_dec(z80, a) << 8;
     z80->elapsed_cycles = 4;
 }
 
@@ -259,6 +328,17 @@ void JR_28(struct Z80 *z80) { // JR Z, s8
     int8_t s = fetch_byte(z80);
 
     if ((z80->af & (1 << FLAG_Z)) != 0) {
+        z80->pc += s;
+        z80->elapsed_cycles = 12;
+    } else {
+        z80->elapsed_cycles = 8;
+    }
+}
+
+void JR_30(struct Z80 *z80) { // JR NC, s8
+    int8_t s = fetch_byte(z80);
+
+    if ((z80->af & (1 << FLAG_C)) == 0) {
         z80->pc += s;
         z80->elapsed_cycles = 12;
     } else {
@@ -368,9 +448,42 @@ void LD_4E(struct Z80 *z80) { // LD C, (HL)
     z80->elapsed_cycles = 8;
 }
 
+void LD_4F(struct Z80 *z80) { // LD C, A
+    z80->bc &= 0xFF00;
+    z80->bc |= z80->af >> 8;
+    z80->elapsed_cycles = 4;
+}
+
 void LD_56(struct Z80 *z80) { // LD D, (HL)
     z80->de &= 0x00FF;
     z80->de |= address_byte(z80, z80->hl) << 8;
+    z80->elapsed_cycles = 8;
+}
+
+void LD_57(struct Z80 *z80) { // LD D, A
+    z80->de &= 0x00FF;
+    z80->de |= z80->af & 0xFF00;
+    z80->elapsed_cycles = 4;
+}
+
+void LD_5F(struct Z80 *z80) { // LD E, A
+    z80->de &= 0xFF00;
+    z80->de |= z80->af >> 8;
+    z80->elapsed_cycles = 4;
+}
+
+void LD_70(struct Z80 *z80) { // LD (HL), B
+    write_byte(z80, z80->hl, z80->bc >> 8);
+    z80->elapsed_cycles = 8;
+}
+
+void LD_71(struct Z80 *z80) { // LD (HL), C
+    write_byte(z80, z80->hl, z80->bc & 0xFF);
+    z80->elapsed_cycles = 8;
+}
+
+void LD_72(struct Z80 *z80) { // LD (HL), D
+    write_byte(z80, z80->hl, z80->de >> 8);
     z80->elapsed_cycles = 8;
 }
 
@@ -382,6 +495,24 @@ void LD_77(struct Z80 *z80) { // LD (HL), A
 void LD_78(struct Z80 *z80) { // LD A, B
     z80->af &= 0x00FF;
     z80->af |= z80->bc & 0xFF00;
+    z80->elapsed_cycles = 4;
+}
+
+void LD_79(struct Z80 *z80) { // LD A, C
+    z80->af &= 0x00FF;
+    z80->af |= (z80->bc & 0xFF) << 8;
+    z80->elapsed_cycles = 4;
+}
+
+void LD_7A(struct Z80 *z80) { // LD A, D
+    z80->af &= 0x00FF;
+    z80->af |= z80->de & 0xFF00;
+    z80->elapsed_cycles = 4;
+}
+
+void LD_7B(struct Z80 *z80) { // LD A, E
+    z80->af &= 0x00FF;
+    z80->af |= (z80->de & 0xFF) << 8;
     z80->elapsed_cycles = 4;
 }
 
@@ -439,9 +570,27 @@ void CALL_CD(struct Z80 *z80) { // CALL a16
     z80->elapsed_cycles = 24;
 }
 
+void RET_C8(struct Z80 *z80) { // RET Z
+    if ((z80->af & (1 << FLAG_Z)) != 0) {
+        z80->pc = pop_word(z80);
+        z80->elapsed_cycles = 20;
+    }
+
+    z80->elapsed_cycles = 8;
+}
+
 void RET_C9(struct Z80 *z80) { // RET
     z80->pc = pop_word(z80);
     z80->elapsed_cycles = 16;
+}
+
+void RET_D0(struct Z80 *z80) { // RET NC
+    if ((z80->af & (1 << FLAG_C)) == 0) {
+        z80->pc = pop_word(z80);
+        z80->elapsed_cycles = 20;
+    }
+
+    z80->elapsed_cycles = 8;
 }
 
 
@@ -459,6 +608,11 @@ void PUSH_C5(struct Z80 *z80) { // PUSH BC
 
 void PUSH_D5(struct Z80 *z80) { // PUSH DE
     push_word(z80, z80->de);
+    z80->elapsed_cycles = 16;
+}
+
+void POP_D1(struct Z80 *z80) { // POP DE
+    z80->de = pop_word(z80);
     z80->elapsed_cycles = 16;
 }
 
