@@ -42,6 +42,7 @@ void push_word(struct Z80 *z80, uint16_t word);
 uint16_t pop_word(struct Z80 *z80);
 
 uint8_t arith_add(struct Z80 *z80, uint8_t a, uint8_t b);
+uint16_t arith_add16(struct Z80 *z80, uint16_t a, uint16_t b);
 uint8_t arith_sub(struct Z80 *z80, uint8_t a, uint8_t b);
 uint8_t arith_inc(struct Z80 *z80, uint8_t v);
 uint8_t arith_dec(struct Z80 *z80, uint8_t v);

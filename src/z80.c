@@ -98,6 +98,16 @@ uint8_t arith_add(struct Z80 *z80, uint8_t a, uint8_t b) {
     return n;
 }
 
+uint16_t arith_add16(struct Z80 *z80, uint16_t a, uint16_t b) {
+    uint16_t n = a + b;
+
+    z80->af &= 0xFF80;
+    z80->af |= (((a & 0xFFF) + (b & 0xFFF)) > 0xFFF) << FLAG_H;
+    z80->af |= (a + b > 0xFFFF) << FLAG_C;
+
+    return n;
+}
+
 uint8_t arith_sub(struct Z80 *z80, uint8_t a, uint8_t b) {
     uint8_t n = a - b;
 
@@ -124,7 +134,7 @@ uint8_t arith_inc(struct Z80 *z80, uint8_t v) {
 uint8_t arith_dec(struct Z80 *z80, uint8_t v) {
     uint8_t n = v - 1;
 
-    z80->af &= 0xFF00;
+    z80->af &= 0xFF10;
     z80->af |= 1 << FLAG_N;
     z80->af |= ((v & 0xF) - 1 < 0) << FLAG_H;
     z80->af |= (n == 0) << FLAG_Z;
